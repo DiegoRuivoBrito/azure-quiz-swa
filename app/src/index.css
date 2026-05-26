@@ -1,0 +1,236 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #081229;
+  color: #e9edf9;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, rgba(73, 112, 255, 0.35), transparent 30%),
+    linear-gradient(180deg, #071020 0%, #02060f 100%);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.app-shell {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+.hero {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 32px;
+  padding: 32px;
+  margin-bottom: 28px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.15);
+}
+
+.eyebrow {
+  color: #72a4ff;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.8rem;
+  margin: 0 0 12px;
+}
+
+.hero h1 {
+  margin: 0 0 12px;
+  font-size: clamp(2rem, 3vw, 3.2rem);
+  line-height: 1.05;
+}
+
+.subtitle {
+  margin: 0;
+  color: #c3d0ff;
+  line-height: 1.75;
+  max-width: 760px;
+}
+
+.card-grid {
+  display: grid;
+  gap: 24px;
+}
+
+.quiz-card {
+  background: rgba(9, 16, 41, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  padding: 24px;
+}
+
+.question-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+  padding: 20px;
+  margin-bottom: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
+}
+
+.question-header span {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: #8caeff;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.question-header p {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.answers-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.answer-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.answer-option input {
+  accent-color: #72a4ff;
+}
+
+.answer-option:hover {
+  transform: translateY(-1px);
+  border-color: rgba(114, 164, 255, 0.45);
+}
+
+.answer-option.selected {
+  border-color: #72a4ff;
+  background: rgba(114, 164, 255, 0.12);
+}
+
+.answer-option.correct {
+  background: rgba(117, 224, 144, 0.18);
+  border-color: #75e090;
+}
+
+.actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.submit-button {
+  border: none;
+  background: linear-gradient(135deg, #6677ff, #5dd6ff);
+  color: #0d1325;
+  padding: 16px 26px;
+  border-radius: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.submit-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.submit-button:not(:disabled):hover {
+  transform: translateY(-2px);
+}
+
+.result-box {
+  padding: 16px 20px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f7fbff;
+}
+
+.topic-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.topic-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 32px;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 3px solid var(--accent);
+  background: rgba(9, 16, 41, 0.92);
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  color: #e9edf9;
+}
+
+.topic-card:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.topic-label {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.topic-desc {
+  font-size: 0.9rem;
+  color: #c3d0ff;
+  line-height: 1.5;
+}
+
+.back-button {
+  display: inline-block;
+  margin-bottom: 20px;
+  background: none;
+  border: none;
+  color: #72a4ff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0;
+  transition: opacity 0.2s ease;
+}
+
+.back-button:hover {
+  opacity: 0.7;
+}
+
+@media (max-width: 720px) {
+  .app-shell {
+    padding: 20px 16px 36px;
+  }
+
+  .hero,
+  .quiz-card {
+    padding: 22px;
+  }
+
+  .topic-grid {
+    grid-template-columns: 1fr;
+  }
+}
