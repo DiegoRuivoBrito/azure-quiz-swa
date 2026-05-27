@@ -1,31 +1,31 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 const TOPICS = {
-  terraform: {
-    label: 'Terraform',
-    description: 'Infraestrutura como código com HashiCorp',
-    accent: '#7c3aed',
+  twoAndAHalfMen: {
+    label: 'Two and a Half Men',
+    description: 'A comédia sobre Charlie, Alan e Jake Harper',
+    accent: '#f59e0b',
     questions: [
-      { question: 'O que o Terraform usa para mapear recursos no provedor?', options: ['State file', 'HCL file', 'Plan file', 'Backend', 'Module'], correct: 0 },
-      { question: 'Qual comando inicializa um diretório Terraform e baixa providers?', options: ['terraform deploy', 'terraform init', 'terraform plan', 'terraform refresh', 'terraform validate'], correct: 1 },
-      { question: 'Onde o Terraform guarda o estado dos recursos criados?', options: ['No provider', 'No state file', 'No backend remoto', 'Na variável', 'No arquivo de log'], correct: 1 },
-      { question: 'Qual bloco define uma infraestrutura reutilizável no Terraform?', options: ['resource', 'data', 'module', 'provider', 'output'], correct: 2 },
-      { question: 'Qual dos seguintes não é um tipo nativo de variável do Terraform?', options: ['string', 'number', 'boolean', 'object', 'function'], correct: 4 },
-      { question: 'Como você aplica as mudanças planejadas pelo Terraform?', options: ['terraform plan', 'terraform validate', 'terraform init', 'terraform apply', 'terraform destroy'], correct: 3 },
-      { question: 'Qual parâmetro define o provider a ser usado?', options: ['type', 'source', 'provider', 'backend', 'resource'], correct: 1 },
-      { question: 'O que faz o comando `terraform plan`?', options: ['Cria recursos', 'Valida variáveis', 'Mostra mudanças esperadas', 'Apaga o estado', 'Registra provider'], correct: 2 },
-      { question: 'Qual recurso é usado para acessar dados externos sem criar novo recurso?', options: ['resource', 'module', 'backend', 'data', 'output'], correct: 3 },
-      { question: 'Qual bloco descreve quais saídas devem ser mostradas?', options: ['input', 'variable', 'output', 'provider', 'locals'], correct: 2 },
-      { question: 'Como você evita expor uma senha em Terraform?', options: ['Usando backend local', 'Definindo variável como sensitive', 'Colocando no provider', 'Usando only_if', 'Criando recurso secreto'], correct: 1 },
-      { question: 'O que faz `terraform destroy`?', options: ['Destrói recursos gerenciados', 'Aplica novas mudanças', 'Exibe o plano', 'Valida a configuração', 'Atualiza o estado'], correct: 0 },
-      { question: 'Qual bloco do Terraform define o nome do recurso?', options: ['resource', 'provider', 'output', 'variable', 'data'], correct: 0 },
-      { question: 'O que é HCL no contexto do Terraform?', options: ['Uma linguagem de programação', 'Um formato de configuração', 'Um provider', 'Um provedor de nuvem', 'Um tipo de recurso'], correct: 1 },
-      { question: 'Qual comando atualiza o arquivo `.terraform.lock.hcl`?', options: ['terraform providers lock', 'terraform init', 'terraform fmt', 'terraform refresh', 'terraform show'], correct: 0 },
-      { question: 'Para que serve um backend remoto no Terraform?', options: ['Armazenar logs', 'Guardar estado compartilhado', 'Executar provider', 'Criar variáveis', 'Mostrar outputs'], correct: 1 },
-      { question: 'Como você define uma variável com valor padrão?', options: ['default = value', 'value = default', 'type = string', 'required = true', 'source = var'], correct: 0 },
-      { question: 'O que é um provider no Terraform?', options: ['Um recurso de nuvem', 'Um plugin que fala com APIs', 'Um tipo de variável', 'Um backend remoto', 'Uma saída do app'], correct: 1 },
-      { question: 'Onde você documenta o uso de uma variável?', options: ['in output', 'in backend', 'in description', 'in module', 'in provider'], correct: 2 },
-      { question: 'Qual comando verifica se a configuração está sintaticamente correta?', options: ['terraform init', 'terraform apply', 'terraform validate', 'terraform plan', 'terraform graph'], correct: 2 },
+      { question: 'Qual é a profissão de Charlie Harper?', options: ['Médico', 'Compositor de jingles', 'Advogado', 'Professor', 'Arquiteto'], correct: 1 },
+      { question: 'Qual é o nome do irmão de Charlie Harper?', options: ['Jake', 'Walden', 'Alan', 'Herb', 'Berta'], correct: 2 },
+      { question: 'Qual é o nome do filho de Alan Harper?', options: ['Charlie', 'Walden', 'Herb', 'Jake', 'Larry'], correct: 3 },
+      { question: 'Onde fica a casa de Charlie Harper?', options: ['Santa Monica', 'Beverly Hills', 'Malibu', 'Venice Beach', 'Calabasas'], correct: 2 },
+      { question: 'Qual é o nome da empregada da casa de Charlie?', options: ['Evelyn', 'Judith', 'Chelsea', 'Berta', 'Lyndsey'], correct: 3 },
+      { question: 'Qual é a profissão de Alan Harper?', options: ['Dentista', 'Médico', 'Quiropraxista', 'Fisioterapeuta', 'Psicólogo'], correct: 2 },
+      { question: 'Qual é o nome da mãe de Charlie e Alan?', options: ['Judith', 'Berta', 'Chelsea', 'Evelyn', 'Lyndsey'], correct: 3 },
+      { question: 'Qual atriz interpreta a mãe Evelyn Harper?', options: ['Conchata Ferrell', 'Marin Hinkle', 'Holland Taylor', 'Melanie Lynskey', 'Jennifer Taylor'], correct: 2 },
+      { question: 'Qual ator interpretou Charlie Harper?', options: ['Ashton Kutcher', 'Jon Cryer', 'Angus T. Jones', 'Charlie Sheen', 'John Stamos'], correct: 3 },
+      { question: 'Qual personagem substitui Charlie Harper na série?', options: ['Alan Harper', 'Jake Harper', 'Herb Melnick', 'Walden Schmidt', 'Larry'], correct: 3 },
+      { question: 'Qual ator interpreta Walden Schmidt?', options: ['Charlie Sheen', 'Jon Cryer', 'Ashton Kutcher', 'Ryan Stiles', 'John Stamos'], correct: 2 },
+      { question: 'Com quem Alan Harper era casado antes da série começar?', options: ['Chelsea', 'Berta', 'Evelyn', 'Lyndsey', 'Judith'], correct: 4 },
+      { question: 'Em qual canal americano a série foi exibida?', options: ['NBC', 'ABC', 'CBS', 'FOX', 'HBO'], correct: 2 },
+      { question: 'Quantas temporadas tem Two and a Half Men?', options: ['8', '9', '10', '11', '12'], correct: 4 },
+      { question: 'Qual ator interpretou Alan Harper?', options: ['Charlie Sheen', 'Jon Cryer', 'Angus T. Jones', 'Ashton Kutcher', 'Ryan Stiles'], correct: 1 },
+      { question: 'O que Jake faz ao crescer na série?', options: ['Vira médico', 'Se torna músico', 'Entra para o exército', 'Vai para a faculdade', 'Abre um negócio'], correct: 2 },
+      { question: 'Qual era o principal vício de Charlie Harper?', options: ['Cigarro', 'Jogo', 'Drogas', 'Álcool', 'Comida'], correct: 3 },
+      { question: 'Quem criou a série Two and a Half Men?', options: ['Shonda Rhimes', 'David Chase', 'Chuck Lorre', 'Matt Groening', 'Seth MacFarlane'], correct: 2 },
+      { question: 'Qual é a ex-esposa de Alan com quem ele tem conflitos constantes?', options: ['Chelsea', 'Evelyn', 'Lyndsey', 'Judith', 'Berta'], correct: 3 },
+      { question: 'Qual atriz interpretou Berta, a empregada?', options: ['Holland Taylor', 'Conchata Ferrell', 'Marin Hinkle', 'Melanie Lynskey', 'April Bowlby'], correct: 1 },
     ],
   },
   friends: {
@@ -82,31 +82,31 @@ const TOPICS = {
       { question: 'Como é chamado o grupo de assassinos treinados em Braavos?', options: ['Sparrows', 'Homens sem Rosto', 'Imaculados', 'Dothraki', 'Maesters'], correct: 1 },
     ],
   },
-  azure: {
-    label: 'Azure',
-    description: 'Plataforma de nuvem da Microsoft',
-    accent: '#0ea5e9',
+  theOffice: {
+    label: 'The Office',
+    description: 'O cotidiano hilário da Dunder Mifflin em Scranton',
+    accent: '#64748b',
     questions: [
-      { question: 'O que é o Azure Resource Manager (ARM)?', options: ['Um banco de dados gerenciado', 'A camada de gerenciamento do Azure', 'Um serviço de container', 'Um provedor de DNS', 'Um serviço de IA'], correct: 1 },
-      { question: 'Qual serviço do Azure equivale ao S3 da AWS para armazenamento de objetos?', options: ['Azure Files', 'Azure Queue', 'Azure Blob Storage', 'Azure Table Storage', 'Azure Disk'], correct: 2 },
-      { question: 'O que é um Resource Group no Azure?', options: ['Um tipo de VM', 'Um contêiner lógico que agrupa recursos relacionados', 'Um serviço de banco de dados', 'Uma rede virtual', 'Um plano de cobrança'], correct: 1 },
-      { question: 'Qual serviço do Azure gerencia identidade e autenticação?', options: ['Azure Monitor', 'Microsoft Entra ID', 'Azure Policy', 'Azure DevOps', 'Azure Sentinel'], correct: 1 },
-      { question: 'O que faz o Azure Container Apps?', options: ['Hospeda VMs Windows', 'Executa containers com autoscaling serverless', 'Armazena imagens Docker', 'Monitora aplicações', 'Gerencia certificados'], correct: 1 },
-      { question: 'Qual serviço do Azure gerencia segredos e chaves de criptografia?', options: ['Azure Security Center', 'Azure Key Vault', 'Azure Defender', 'Azure Sentinel', 'Azure Policy'], correct: 1 },
-      { question: 'O que é o Azure DevOps?', options: ['Um serviço de IA', 'Um conjunto de ferramentas para CI/CD e gestão de projetos', 'Um banco de dados NoSQL', 'Um serviço de monitoramento', 'Uma CDN'], correct: 1 },
-      { question: 'O que é o Azure Kubernetes Service (AKS)?', options: ['Um serviço de banco de dados', 'Um Kubernetes gerenciado na nuvem', 'Um serviço de mensageria', 'Um firewall', 'Uma VPN'], correct: 1 },
-      { question: 'Qual serviço do Azure monitora métricas e cria alertas?', options: ['Azure Sentinel', 'Azure Advisor', 'Azure Monitor', 'Azure Policy', 'Azure Cost Management'], correct: 2 },
-      { question: 'O que é o Azure Log Analytics?', options: ['Um serviço de armazenamento de objetos', 'Uma ferramenta para consultar e analisar logs', 'Um serviço de CI/CD', 'Um banco de dados relacional', 'Uma CDN'], correct: 1 },
-      { question: 'O que significa SLA no contexto do Azure?', options: ['Software License Agreement', 'Service Level Agreement', 'Security Layer Authorization', 'Serverless Lambda Architecture', 'System Log Audit'], correct: 1 },
-      { question: 'O que é o Azure Virtual Network (VNet)?', options: ['Uma CDN global', 'Uma rede privada isolada na nuvem', 'Um serviço de DNS', 'Um load balancer', 'Um firewall gerenciado'], correct: 1 },
-      { question: 'Qual serviço do Azure distribui tráfego entre instâncias?', options: ['Azure DNS', 'Azure CDN', 'Azure Load Balancer', 'Azure Firewall', 'Azure VPN Gateway'], correct: 2 },
-      { question: 'O que diferencia IaaS, PaaS e SaaS?', options: ['São nomes de regiões do Azure', 'São modelos de serviço em nuvem', 'São tipos de subscrição', 'São categorias de preço', 'São ferramentas de monitoramento'], correct: 1 },
-      { question: 'O que é o Azure Blob Storage tier "Archive"?', options: ['O mais rápido para acesso frequente', 'O mais barato, para dados raramente acessados', 'O padrão para produção', 'Para backup diário', 'Para streaming de vídeo'], correct: 1 },
-      { question: 'O que é uma Subscription no Azure?', options: ['Um tipo de recurso', 'Uma unidade de cobrança e controle de acesso', 'Um plano de suporte', 'Um tipo de rede virtual', 'Um serviço de IA'], correct: 1 },
-      { question: 'O que faz o Azure Policy?', options: ['Configura firewall de rede', 'Define e aplica regras de conformidade nos recursos', 'Monitora custos em tempo real', 'Gerencia identidades de usuários', 'Distribui tráfego de rede'], correct: 1 },
-      { question: 'Qual é o serviço de banco de dados PostgreSQL gerenciado no Azure?', options: ['Azure SQL Database', 'Azure Cosmos DB', 'Azure Database for PostgreSQL', 'Azure Synapse Analytics', 'Azure Table Storage'], correct: 2 },
-      { question: 'O que é o Azure Functions?', options: ['Um serviço de containers', 'Computação serverless orientada a eventos', 'Um banco de dados NoSQL', 'Um serviço de filas', 'Um orquestrador de containers'], correct: 1 },
-      { question: 'O que é uma Availability Zone no Azure?', options: ['Uma região geográfica completa', 'Um datacenter isolado dentro de uma região', 'Um grupo de recursos', 'Uma VNet privada', 'Um serviço de backup'], correct: 1 },
+      { question: 'Qual é o nome do gerente regional interpretado por Steve Carell?', options: ['Dwight Schrute', 'Jim Halpert', 'Michael Scott', 'Andy Bernard', 'Ryan Howard'], correct: 2 },
+      { question: 'Em qual cidade fica a filial da Dunder Mifflin na série?', options: ['Nova York', 'Philadelphia', 'Scranton', 'Pittsburgh', 'Allentown'], correct: 2 },
+      { question: 'Qual é o produto vendido pela Dunder Mifflin?', options: ['Impressoras', 'Computadores', 'Móveis de escritório', 'Papel', 'Software'], correct: 3 },
+      { question: 'Com quem Jim Halpert se casa na série?', options: ['Kelly Kapoor', 'Angela Martin', 'Meredith Palmer', 'Pam Beesly', 'Jan Levinson'], correct: 3 },
+      { question: 'Qual ator interpreta Dwight Schrute?', options: ['John Krasinski', 'Ed Helms', 'Rainn Wilson', 'Craig Robinson', 'BJ Novak'], correct: 2 },
+      { question: 'Qual é a famosa frase de duplo sentido que Michael Scott repete constantemente?', options: ["That's what she said", 'I declare bankruptcy', 'Bears beets battlestar', 'Assistant to the manager', 'Identity theft is not a joke'], correct: 0 },
+      { question: 'O que Dwight Schrute possui fora do trabalho?', options: ['Uma vinícola', 'Um haras', 'Uma fazenda de beterraba', 'Um restaurante', 'Uma loja de armas'], correct: 2 },
+      { question: 'Quantas temporadas tem The Office (versão americana)?', options: ['7', '8', '9', '10', '11'], correct: 2 },
+      { question: 'Em qual país foi produzida a versão original de The Office?', options: ['Austrália', 'Canadá', 'Reino Unido', 'Alemanha', 'França'], correct: 2 },
+      { question: 'Qual é o cargo oficial de Dwight Schrute?', options: ['Gerente Regional', 'Gerente Regional Assistente', 'Assistente do Gerente Regional', 'Diretor de Vendas', 'Supervisor de Vendas'], correct: 2 },
+      { question: 'Qual atriz interpreta Pam Beesly?', options: ['Mindy Kaling', 'Angela Kinsey', 'Ellie Kemper', 'Jenna Fischer', 'Kate Flannery'], correct: 3 },
+      { question: 'Qual personagem é obcecada por gatos e trabalha como contadora?', options: ['Kevin Malone', 'Oscar Martinez', 'Angela Martin', 'Phyllis Vance', 'Meredith Palmer'], correct: 2 },
+      { question: 'Quem se torna gerente regional após Michael Scott sair?', options: ['Jim Halpert', 'Dwight Schrute', 'Andy Bernard', 'Robert California', 'Deangelo Vickers'], correct: 2 },
+      { question: 'Em qual formato de filmagem a série é produzida?', options: ['Drama clássico', 'Mockumentary', 'Sitcom com plateia', 'Animação', 'Reality show'], correct: 1 },
+      { question: 'Qual ator interpreta Jim Halpert?', options: ['Steve Carell', 'Rainn Wilson', 'Ed Helms', 'John Krasinski', 'BJ Novak'], correct: 3 },
+      { question: 'Qual personagem começa como estagiário e chega a ser VP na empresa?', options: ['Jim Halpert', 'Andy Bernard', 'Ryan Howard', 'Darryl Philbin', 'Toby Flenderson'], correct: 2 },
+      { question: 'Quem é o responsável de RH que Michael Scott odeia?', options: ['Kevin Malone', 'Oscar Martinez', 'Toby Flenderson', 'Stanley Hudson', 'Creed Bratton'], correct: 2 },
+      { question: 'Qual é o nome do executivo corporativo da Dunder Mifflin que aparece com frequência?', options: ['Robert California', 'David Wallace', 'Charles Miner', 'Ryan Howard', 'Jo Bennett'], correct: 1 },
+      { question: 'Quem adaptou The Office para a versão americana?', options: ['Ricky Gervais', 'Greg Daniels', 'Michael Schur', 'Chuck Lorre', 'JJ Abrams'], correct: 1 },
+      { question: 'Em qual episódio Michael Scott retorna brevemente à série?', options: ['Finale da 8ª temporada', 'Finale da 9ª temporada', 'Premiere da 9ª temporada', 'Episódio de Halloween', 'Episódio de Natal'], correct: 1 },
     ],
   },
 };
@@ -144,9 +144,9 @@ function Quiz({ topicKey, onBack }) {
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
 
-  const selectedQuestions = useMemo(() => {
-    return topic.questions.slice().sort(() => Math.random() - 0.5).slice(0, 5);
-  }, []);
+  const [selectedQuestions] = useState(() =>
+    topic.questions.slice().sort(() => Math.random() - 0.5).slice(0, 5)
+  );
 
   const handleOptionChange = (questionIndex, optionIndex) => {
     if (submitted) return;

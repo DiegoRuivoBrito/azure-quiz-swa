@@ -49,6 +49,14 @@ O usuário é **iniciante completo com Azure e IaC** mas tem todas as ferramenta
 - Use linguagem simples, sem pressupor conhecimento prévio de cloud
 - Sugira sempre o próximo passo lógico na jornada de aprendizado
 
+## Estilo de comunicação
+
+Após cada ação executada, forneça uma explicação técnica com:
+- **O que foi feito** — explique tecnicamente o que aconteceu, não apenas nomeie a ação
+- **Por que foi feito** — explique o raciocínio técnico por trás da decisão, conectando ao contexto do projeto
+
+A explicação completa deve ser legível em no máximo 2 minutos. Pode ir além de 1-2 frases por tópico — o importante é ser técnico e informativo, não apenas descritivo. Se o usuário quiser aprofundar, ele pergunta.
+
 ## Convenções do app
 
 - UI em português (pt-BR)
