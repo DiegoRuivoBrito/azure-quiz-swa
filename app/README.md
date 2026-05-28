@@ -1,25 +1,33 @@
-# Terraform Quiz App
+# Quiz App
 
-Aplicativo React simples com um quiz de Terraform. A cada carregamento, são sorteadas 5 perguntas diferentes a partir de um conjunto de 20.
+App de quiz de cultura pop em React + Vite, hospedado como Azure Static Web App.
 
-## Como usar
+## Temas disponíveis
+
+- Friends
+- Game of Thrones
+- Two and a Half Men
+- The Office
+
+Cada sessão sorteia 5 perguntas aleatórias de um banco de 40 por tema.
+
+## Desenvolvimento local
 
 ```bash
-cd app
 npm install
-npm run dev
+npm run dev       # servidor de desenvolvimento → http://localhost:5173
+npm run build     # build de produção → dist/
+npm run preview   # preview local do build
+npm run lint      # ESLint
 ```
 
-Acesse a URL exibida pelo Vite para responder ao quiz.
+## Stack
 
-## Build Docker
+- React 18 + JSX
+- Vite 5
+- ESLint 10 (flat config)
+- Estado gerenciado com `useState` do React
 
-```bash
-docker build -t terraform-quiz-app .
-```
+## Deploy
 
-## Observações
-
-- O quiz usa `useState` para armazenar as respostas.
-- Cada pergunta tem 5 alternativas.
-- Ao confirmar, o aplicativo calcula a nota final.
+O deploy é feito automaticamente via GitHub Actions ao fazer push para `main`. O build gerado em `dist/` é enviado para o Azure Static Web Apps.

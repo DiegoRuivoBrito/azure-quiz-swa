@@ -63,7 +63,7 @@ Cada fase tem quatro seções fixas:
 
 ---
 
-## Fase 4 — Azure Static Web App: entender o serviço
+## Fase 4 — Azure Static Web App: entender o serviço ✅ Concluída
 
 **Conceito:**
 Antes de criar o SWA com Terraform, entender o que ele é de verdade.
@@ -90,7 +90,7 @@ O SWA também tem integração nativa com GitHub: ao criar o recurso, o Azure ge
 
 ---
 
-## Fase 5 — SWA com Terraform
+## Fase 5 — SWA com Terraform ✅ Concluída
 
 **Conceito:**
 Agora que você entende o que é um SWA, vamos criá-lo via Terraform. O recurso `azurerm_static_web_app` cria a casca do serviço no Azure — sem código, sem GitHub, só a infraestrutura. Dois outputs importantes serão gerados:
@@ -111,7 +111,7 @@ O `api_key` é sensível — vira um secret no GitHub na próxima fase, e **nunc
 
 ---
 
-## Fase 6 — GitHub Actions: o pipeline de CI/CD
+## Fase 6 — GitHub Actions: o pipeline de CI/CD ✅ Concluída
 
 **Conceito:**
 GitHub Actions é o sistema de automação do GitHub. Você descreve um fluxo de trabalho em um arquivo YAML (`.github/workflows/`) e o GitHub executa automaticamente quando um evento acontece — neste caso, um `push` no branch `main`.
@@ -134,7 +134,7 @@ O `api_key` é armazenado como um **GitHub Secret** — uma variável de ambient
 
 ---
 
-## Fase 7 — Primeiro deploy
+## Fase 7 — Primeiro deploy ✅ Concluída
 
 **Conceito:**
 Com tudo no lugar, um `git push` dispara a cadeia completa. Vamos acompanhar cada etapa em tempo real pelo GitHub Actions e verificar o resultado final no Azure.
@@ -164,7 +164,7 @@ git push
 
 ---
 
-## Fase 8 — Consolidação e revisão
+## Fase 8 — Consolidação e revisão ✅ Concluída
 
 **Conceito:**
 A melhor prova de que você entendeu IaC de verdade é conseguir destruir tudo e recriar do zero com confiança. `terraform destroy` apaga o SWA e o Resource Group. `terraform apply` os recria em minutos — idênticos ao original.
@@ -180,11 +180,37 @@ Também é o momento de revisar o que foi construído como sistema completo: có
 
 ---
 
-## O que vem depois (fases futuras)
+---
 
-Quando o frontend estático estiver no ar e o fluxo estiver claro:
+## Fase 9 — Estado remoto do Terraform ✅ Concluída
 
-- **Fase 9** — Azure Functions: adicionar uma API em `/api` integrada ao SWA
-- **Fase 10** — Banco de dados: Azure Cosmos DB ou Azure SQL, conectado à API
-- **Fase 11** — Estado remoto do Terraform: mover o `tfstate` para Azure Storage Account
-- **Fase 12** — Ambientes: criar infra separada para `dev` e `prod` com Terraform workspaces
+**Conceito:**
+Atualmente o `terraform.tfstate` vive só na sua máquina. Se você perder o arquivo, o Terraform perde o rastro de tudo que criou no Azure. Em times ou ambientes de CI/CD isso é inviável. A solução é mover o estado para um **backend remoto** — no Azure, isso significa um Storage Account com um blob container.
+
+**Hands-on:**
+- Criar um Storage Account e container no Terraform
+- Configurar o bloco `backend "azurerm"` no `main.tf`
+- Rodar `terraform init -migrate-state` para mover o estado local para a nuvem
+
+**Entregável:** `tfstate` armazenado no Azure Storage, máquina local sem arquivo de estado.
+
+---
+
+## Fase 10 — Azure Functions: adicionando backend ao quiz
+
+**Conceito:**
+O SWA tem integração nativa com Azure Functions via pasta `api/`. Tudo que estiver em `api/` é automaticamente deployado como Functions e fica acessível em `/api/<nome-da-function>`. Isso permite adicionar lógica server-side sem sair do repositório.
+
+**Hands-on:**
+- Criar a pasta `api/` com uma Function simples (ex: salvar pontuação)
+- Testar localmente com o Azure Functions Core Tools
+- Fazer deploy via GitHub Actions (o workflow já suporta)
+
+**Entregável:** Endpoint `/api/score` funcionando em produção, integrado ao quiz.
+
+---
+
+## Fases futuras
+
+- **Fase 11** — Banco de dados: Azure Cosmos DB ou Azure SQL conectado às Functions
+- **Fase 12** — Ambientes: infra separada para `dev` e `prod` com Terraform workspaces

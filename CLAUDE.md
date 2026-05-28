@@ -13,15 +13,25 @@ O código do app vive dentro de `app/`. Todos os comandos npm devem ser executad
 ```
 Azure_SWA/
 ├── CLAUDE.md
+├── ROADMAP.md
+├── .github/
+│   └── workflows/
+│       └── deploy.yml        ← CI/CD: build + deploy para Azure SWA
 ├── app/
 │   ├── package.json
+│   ├── .npmrc                ← legacy-peer-deps=true (ESLint 10 compat)
 │   ├── vite.config.js
+│   ├── eslint.config.js
 │   ├── index.html
 │   └── src/
 │       ├── main.jsx
 │       ├── App.jsx
 │       └── index.css
-└── infra/          ← ainda não existe; será criado durante o aprendizado de IaC
+└── infra/
+    ├── main.tf               ← provider, backend remoto, recursos Azure
+    ├── variables.tf
+    ├── outputs.tf
+    └── terraform.tfvars      ← gitignored (contém subscription_id)
 ```
 
 ## Comandos
@@ -36,10 +46,11 @@ npm run preview   # preview local do build de produção
 
 ## Estado atual do projeto
 
-- **Git**: repositório ainda não inicializado — será criado como parte do aprendizado
-- **Azure**: subscription ativa, mas nenhum recurso criado ainda
-- **CI/CD**: GitHub Actions será configurado junto com o Azure SWA
-- **Linting/formatação**: não configurado ainda
+- **Git**: repositório ativo em `github.com/DiegoRuivoBrito/azure-quiz-swa`, branch `main`
+- **Azure**: SWA `swa-quiz-swa` e Resource Group `rg-quiz-swa` criados via Terraform em `eastus2`
+- **CI/CD**: GitHub Actions configurado — push no `main` faz build e deploy automaticamente
+- **Terraform**: backend remoto configurado — tfstate no Storage Account `stquizswastate` (RG `rg-terraform-state`)
+- **Linting**: ESLint 10 com flat config (`eslint.config.js`)
 
 ## Perfil do usuário
 
@@ -65,9 +76,23 @@ A explicação completa deve ser legível em no máximo 2 minutos. Pode ir além
 - Estado gerenciado com `useState`/`useMemo` do React (sem Zustand/Redux)
 - O build de produção vai para `app/dist/` — é essa pasta que o Azure SWA serve
 
+## Fluxo de desenvolvimento por fase
+
+Cada fase do ROADMAP.md segue este fluxo obrigatório:
+
+1. **Conceito primeiro** — invocar o skill `professor` para explicar o porquê antes do como
+2. **Hands-on** — executar os comandos/código com o usuário
+3. **Atualizar o ROADMAP.md** — marcar a fase como `✅ Concluída` e registrar o que foi feito
+4. **Atualizar a memória** — refletir o novo estado em `memory/project_state.md`
+
+Nunca avançar para a próxima fase sem concluir esses quatro passos.
+
 ## Roadmap de evolução
 
-O app vai crescer além do frontend estático:
-1. **Fase atual**: React SPA → Azure Static Web Apps
-2. **Próxima fase**: adicionar backend (Azure Functions ou API separada) e banco de dados
+O estado completo das fases está em `ROADMAP.md` na raiz do projeto. O app vai crescer além do frontend estático:
+
+- **Próxima fase (10)**: Azure Functions — adicionar backend integrado ao SWA
+- **Fase futura (11)**: banco de dados (Azure Cosmos DB ou SQL)
+- **Fase futura (12)**: ambientes `dev` e `prod` com Terraform workspaces
+
 Mantenha o código preparado para essa evolução sem over-engineering agora.
