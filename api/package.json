@@ -1,0 +1,14 @@
+{
+  "name": "quiz-api",
+  "version": "1.0.0",
+  "main": "src/functions/*.js",
+  "scripts": {
+    "start": "func start"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.6.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

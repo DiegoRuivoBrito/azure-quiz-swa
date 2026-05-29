@@ -11,6 +11,10 @@ infra/*.tfstate
 infra/*.tfstate.backup
 infra/terraform.tfvars
 
+# Azure Functions local settings (contém strings de conexão — nunca commitar)
+api/local.settings.json
+api/node_modules/
+
 # OS
 .DS_Store
 Thumbs.db
