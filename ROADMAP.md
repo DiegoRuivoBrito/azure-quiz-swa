@@ -224,6 +224,10 @@ Atualmente o `terraform.tfstate` vive só na sua máquina. Se você perder o arq
 
 **Por que dois containers separados:** `questions` e `scores` têm partition keys diferentes (`/topic` vs `/email`) porque os padrões de acesso são opostos — perguntas são lidas por tópico, resultados são consultados por usuário. Separar os containers maximiza a eficiência das queries no Cosmos DB.
 
+**Melhorias na página de histórico (pós-fase):**
+- Histórico reorganizado em quatro seções: **Média por tema** (%), **Melhor resultado** (melhor nota individual por tema, destacado em dourado), **Acumulado por tema** (total de acertos/questões somando todas as partidas), **Partidas individuais** (cada jogo separado com data)
+- `accumulatedByTopic` e `bestByTopic` calculados no frontend a partir do array `history` já retornado pela API, sem mudança de backend
+
 ---
 
 ## Fase 12 — Ambientes: dev e prod com Terraform Workspaces
