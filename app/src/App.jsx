@@ -21,9 +21,19 @@ const TOPICS = {
     description: 'O cotidiano hilário da Dunder Mifflin em Scranton',
     accent: '#64748b',
   },
+  narcos: {
+    label: 'Narcos',
+    description: 'A ascensão e queda do Cartel de Medellín',
+    accent: '#16a34a',
+  },
+  breakingBad: {
+    label: 'Breaking Bad',
+    description: 'A transformação de Walter White em Heisenberg',
+    accent: '#2563eb',
+  },
 };
 
-function Home({ onSelect }) {
+function Home({ onSelect, onViewHistory }) {
   return (
     <div className="app-shell">
       <header className="hero">
@@ -46,11 +56,14 @@ function Home({ onSelect }) {
           </button>
         ))}
       </div>
+      <div className="history-link">
+        <button className="ghost-button" onClick={onViewHistory}>Ver meu histórico →</button>
+      </div>
     </div>
   );
 }
 
-function Quiz({ topicKey, onBack }) {
+function Quiz({ topicKey, onBack, onViewHistory }) {
   const topic = TOPICS[topicKey];
   const [selectedOptions, setSelectedOptions] = useState(Array(5).fill(null));
   const [submitted, setSubmitted] = useState(false);
@@ -58,6 +71,9 @@ function Quiz({ topicKey, onBack }) {
   const [selectedQuestions, setSelectedQuestions] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [saveForm, setSaveForm] = useState({ name: '', email: '' });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     fetch(`/api/questions?topic=${topicKey}`)
@@ -91,6 +107,29 @@ function Quiz({ topicKey, onBack }) {
     }, 0);
     setScore(finalScore);
     setSubmitted(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await fetch('/api/scores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: saveForm.name.trim(),
+          email: saveForm.email.trim(),
+          topic: topicKey,
+          topicLabel: topic.label,
+          score,
+          totalQuestions: selectedQuestions.length,
+        }),
+      });
+      setSaved(true);
+    } catch {
+      setSaved(true);
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -171,21 +210,171 @@ function Quiz({ topicKey, onBack }) {
               </div>
             )}
           </div>
+
+          {submitted && (
+            <div className="save-section">
+              {!saved ? (
+                <>
+                  <p className="save-label">Salvar resultado?</p>
+                  <div className="save-fields">
+                    <input
+                      className="text-input"
+                      placeholder="Seu nome"
+                      value={saveForm.name}
+                      onChange={(e) => setSaveForm((f) => ({ ...f, name: e.target.value }))}
+                    />
+                    <input
+                      className="text-input"
+                      type="email"
+                      placeholder="Seu email"
+                      value={saveForm.email}
+                      onChange={(e) => setSaveForm((f) => ({ ...f, email: e.target.value }))}
+                    />
+                    <button
+                      className="submit-button"
+                      onClick={handleSave}
+                      disabled={saving || !saveForm.name.trim() || !saveForm.email.trim()}
+                    >
+                      {saving ? 'Salvando...' : 'Salvar'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="saved-confirm">
+                  <span>✓ Resultado salvo!</span>
+                  <button className="ghost-button" onClick={() => onViewHistory(saveForm.email)}>
+                    Ver meu histórico →
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </section>
       </main>
     </div>
   );
 }
 
-export default function App() {
-  const [topic, setTopic] = useState(null);
-  const [quizKey, setQuizKey] = useState(0);
+function History({ onBack, initialEmail = '' }) {
+  const [email, setEmail] = useState(initialEmail);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleSelect = (t) => {
-    setTopic(t);
-    setQuizKey((k) => k + 1);
+  useEffect(() => {
+    if (initialEmail) fetchHistory(initialEmail);
+  }, [initialEmail]);
+
+  const fetchHistory = (target) => {
+    setLoading(true);
+    setError(null);
+    setData(null);
+    fetch(`/api/scores?email=${encodeURIComponent(target.toLowerCase().trim())}`)
+      .then((res) => {
+        if (res.status === 404) throw new Error('Nenhum resultado encontrado para este email.');
+        if (!res.ok) throw new Error('Erro ao buscar histórico.');
+        return res.json();
+      })
+      .then((d) => { setData(d); setLoading(false); })
+      .catch((err) => { setError(err.message); setLoading(false); });
   };
 
-  if (!topic) return <Home onSelect={handleSelect} />;
-  return <Quiz key={quizKey} topicKey={topic} onBack={() => setTopic(null)} />;
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (email.trim()) fetchHistory(email.trim());
+  };
+
+  return (
+    <div className="app-shell">
+      <header className="hero">
+        <button className="back-button" onClick={onBack}>← Voltar aos temas</button>
+        <h1>Meu histórico</h1>
+        <p className="subtitle">Informe seu email para ver suas médias e partidas anteriores.</p>
+      </header>
+
+      <div className="quiz-card">
+        <form onSubmit={handleSearch} className="history-search">
+          <input
+            className="text-input"
+            type="email"
+            placeholder="seu@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <button className="submit-button" type="submit" disabled={loading || !email.trim()}>
+            {loading ? 'Buscando...' : 'Buscar'}
+          </button>
+        </form>
+
+        {error && <p className="error-msg">{error}</p>}
+
+        {data && (
+          <div className="history-data">
+            <p className="history-greeting">
+              Olá, <strong>{data.name}</strong> — média geral: <strong>{data.overallAverage}%</strong>
+            </p>
+
+            <div className="stat-grid">
+              {Object.entries(data.averageByTopic).map(([key, stat]) => (
+                <div key={key} className="stat-item">
+                  <span className="stat-label">{stat.label}</span>
+                  <span className="stat-value">{stat.average}%</span>
+                  <span className="stat-attempts">
+                    {stat.attempts} {stat.attempts === 1 ? 'partida' : 'partidas'}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="history-list">
+              {data.history.map((entry, i) => (
+                <div key={i} className="history-entry">
+                  <span className="history-topic">{entry.topicLabel}</span>
+                  <span className="history-score">{entry.score}/{entry.totalQuestions}</span>
+                  <span className="history-date">
+                    {new Date(entry.timestamp).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const [view, setView] = useState('home');
+  const [topic, setTopic] = useState(null);
+  const [quizKey, setQuizKey] = useState(0);
+  const [historyEmail, setHistoryEmail] = useState('');
+
+  const handleSelectTopic = (t) => {
+    setTopic(t);
+    setQuizKey((k) => k + 1);
+    setView('quiz');
+  };
+
+  const handleViewHistory = (email = '') => {
+    setHistoryEmail(email);
+    setView('history');
+  };
+
+  if (view === 'quiz') {
+    return (
+      <Quiz
+        key={quizKey}
+        topicKey={topic}
+        onBack={() => setView('home')}
+        onViewHistory={handleViewHistory}
+      />
+    );
+  }
+
+  if (view === 'history') {
+    return <History onBack={() => setView('home')} initialEmail={historyEmail} />;
+  }
+
+  return <Home onSelect={handleSelectTopic} onViewHistory={() => handleViewHistory()} />;
 }
