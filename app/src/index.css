@@ -352,6 +352,24 @@ input {
   color: #6878a0;
 }
 
+.section-title {
+  margin: 0 0 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #6878a0;
+}
+
+.best-item {
+  border-color: rgba(251, 191, 36, 0.3);
+  background: rgba(251, 191, 36, 0.04);
+}
+
+.best-item .stat-value {
+  color: #fbbf24;
+}
+
 .history-list {
   display: flex;
   flex-direction: column;

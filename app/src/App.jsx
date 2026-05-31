@@ -261,6 +261,35 @@ function History({ onBack, initialEmail = '' }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const accumulatedByTopic = {};
+  const bestByTopic = {};
+  if (data) {
+    for (const entry of data.history) {
+      if (!accumulatedByTopic[entry.topic]) {
+        accumulatedByTopic[entry.topic] = {
+          label: entry.topicLabel,
+          totalCorrect: 0,
+          totalQuestions: 0,
+          attempts: 0,
+          lastPlayed: entry.timestamp,
+        };
+      }
+      accumulatedByTopic[entry.topic].totalCorrect += entry.score;
+      accumulatedByTopic[entry.topic].totalQuestions += entry.totalQuestions;
+      accumulatedByTopic[entry.topic].attempts += 1;
+
+      const pct = (entry.score / entry.totalQuestions) * 100;
+      if (!bestByTopic[entry.topic] || pct > bestByTopic[entry.topic].pct) {
+        bestByTopic[entry.topic] = {
+          label: entry.topicLabel,
+          score: entry.score,
+          totalQuestions: entry.totalQuestions,
+          pct: Math.round(pct),
+        };
+      }
+    }
+  }
+
   useEffect(() => {
     if (initialEmail) fetchHistory(initialEmail);
   }, [initialEmail]);
@@ -314,6 +343,7 @@ function History({ onBack, initialEmail = '' }) {
               Olá, <strong>{data.name}</strong> — média geral: <strong>{data.overallAverage}%</strong>
             </p>
 
+            <p className="section-title">Média por tema</p>
             <div className="stat-grid">
               {Object.entries(data.averageByTopic).map(([key, stat]) => (
                 <div key={key} className="stat-item">
@@ -326,6 +356,31 @@ function History({ onBack, initialEmail = '' }) {
               ))}
             </div>
 
+            <p className="section-title">Melhor resultado</p>
+            <div className="stat-grid">
+              {Object.entries(bestByTopic).map(([key, best]) => (
+                <div key={key} className="stat-item best-item">
+                  <span className="stat-label">{best.label}</span>
+                  <span className="stat-value">{best.score}/{best.totalQuestions}</span>
+                  <span className="stat-attempts">{best.pct}% — melhor partida</span>
+                </div>
+              ))}
+            </div>
+
+            <p className="section-title">Acumulado por tema</p>
+            <div className="history-list">
+              {Object.values(accumulatedByTopic).map((acc, i) => (
+                <div key={i} className="history-entry">
+                  <span className="history-topic">{acc.label}</span>
+                  <span className="history-score">{acc.totalCorrect}/{acc.totalQuestions}</span>
+                  <span className="history-date">
+                    {acc.attempts} {acc.attempts === 1 ? 'partida' : 'partidas'} · última: {new Date(acc.lastPlayed).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <p className="section-title">Partidas individuais</p>
             <div className="history-list">
               {data.history.map((entry, i) => (
                 <div key={i} className="history-entry">
