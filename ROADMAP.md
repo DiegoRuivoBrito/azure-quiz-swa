@@ -196,21 +196,57 @@ Atualmente o `terraform.tfstate` vive só na sua máquina. Se você perder o arq
 
 ---
 
-## Fase 10 — Azure Functions: adicionando backend ao quiz
+## Fase 10 — Azure Functions: adicionando backend ao quiz ✅ Concluída
 
-**Conceito:**
-O SWA tem integração nativa com Azure Functions via pasta `api/`. Tudo que estiver em `api/` é automaticamente deployado como Functions e fica acessível em `/api/<nome-da-function>`. Isso permite adicionar lógica server-side sem sair do repositório.
+**O que foi feito:**
+- Criada a pasta `api/` com Azure Functions v4 (Node.js), integrada ao SWA via `api_location: api` no workflow
+- Perguntas do quiz movidas do bundle JS (`App.jsx`) para `api/src/data/questions.js`
+- Endpoint `GET /api/questions?topic=<key>` retorna as perguntas do tópico solicitado
+- `App.jsx` atualizado para fazer `fetch('/api/questions?topic=...)` via `useEffect`, com estados de loading e erro
+- Deploy automático das Functions junto com o frontend via GitHub Actions
 
-**Hands-on:**
-- Criar a pasta `api/` com uma Function simples (ex: salvar pontuação)
-- Testar localmente com o Azure Functions Core Tools
-- Fazer deploy via GitHub Actions (o workflow já suporta)
-
-**Entregável:** Endpoint `/api/score` funcionando em produção, integrado ao quiz.
+**Por que managed Functions e não um Function App separado:** Functions integradas ao SWA não exigem nenhum recurso Azure adicional — o runtime é gerenciado pelo próprio SWA. Menos infra, menos custo, mesma URL (sem CORS).
 
 ---
 
-## Fases futuras
+## Fase 11 — Banco de dados: Azure Cosmos DB ✅ Concluída
 
-- **Fase 11** — Banco de dados: Azure Cosmos DB ou Azure SQL conectado às Functions
-- **Fase 12** — Ambientes: infra separada para `dev` e `prod` com Terraform workspaces
+**O que foi feito:**
+- Adicionado `azurerm_cosmosdb_account` (serverless), `azurerm_cosmosdb_sql_database` e dois containers ao `main.tf`:
+  - `questions` — particionado por `/topic`, armazena as perguntas do quiz
+  - `scores` — particionado por `/email`, armazena os resultados dos usuários
+- `outputs.tf` atualizado com `cosmosdb_endpoint` e `cosmosdb_primary_key` (sensitive)
+- `api/src/lib/cosmos.js` — client Cosmos DB compartilhado entre as Functions, lê endpoint e chave via variáveis de ambiente (`COSMOS_ENDPOINT`, `COSMOS_KEY`)
+- `api/src/functions/getScores.js` — `GET /api/scores?email=...` retorna histórico e médias por tópico
+- `api/src/functions/postScore.js` — `POST /api/scores` salva resultado ao finalizar o quiz
+- `api/scripts/seed.js` — script para popular o container `questions` no Cosmos DB
+- Perguntas do quiz migradas para o Cosmos DB; adicionar ou editar perguntas não exige redeploy
+
+**Por que dois containers separados:** `questions` e `scores` têm partition keys diferentes (`/topic` vs `/email`) porque os padrões de acesso são opostos — perguntas são lidas por tópico, resultados são consultados por usuário. Separar os containers maximiza a eficiência das queries no Cosmos DB.
+
+---
+
+## Fase 12 — Ambientes: dev e prod com Terraform Workspaces
+
+**Conceito:**
+Hoje temos um único ambiente: tudo que vai para `main` vai direto para produção. Em projetos reais, você precisa de pelo menos dois ambientes — um para testar mudanças antes de expô-las aos usuários.
+
+Terraform Workspaces permitem usar o mesmo código de infra para criar recursos paralelos e independentes. Um `workspace` é como uma "cópia isolada" do estado — `terraform workspace select dev` mantém um `tfstate` separado do `terraform workspace select prod`.
+
+A arquitetura de ambientes:
+```
+Branch: dev  → GitHub Actions → rg-quiz-swa-dev  → swa-quiz-swa-dev
+Branch: main → GitHub Actions → rg-quiz-swa-prod → swa-quiz-swa-prod
+```
+
+Cada ambiente tem seu próprio Resource Group, SWA e Cosmos DB — completamente isolados. Uma mudança quebrada em `dev` nunca afeta `prod`.
+
+**Hands-on:**
+- Parametrizar o `main.tf` para usar `${var.environment}` nos nomes dos recursos
+- Criar workspaces `dev` e `prod` com `terraform workspace new`
+- Atualizar o `deploy.yml` para detectar o branch e fazer deploy no ambiente correto
+- Criar um `terraform.tfvars` por ambiente (ou usar variáveis de CI)
+
+**Entregável:** Push no branch `dev` deploya no ambiente de desenvolvimento. Merge para `main` deploya em produção. Os dois coexistem sem interferência.
+
+**Checkpoint:** O que acontece com o Cosmos DB de `dev` se você rodar `terraform destroy` no workspace `dev`? O banco de `prod` é afetado?

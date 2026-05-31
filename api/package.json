@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "main": "src/functions/*.js",
   "scripts": {
-    "start": "func start"
+    "start": "func start",
+    "seed": "node scripts/seed.js"
   },
   "dependencies": {
+    "@azure/cosmos": "^4.2.0",
     "@azure/functions": "^4.6.0"
   },
   "engines": {

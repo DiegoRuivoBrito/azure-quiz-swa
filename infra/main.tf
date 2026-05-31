@@ -30,4 +30,49 @@ resource "azurerm_static_web_app" "main" {
   location            = azurerm_resource_group.main.location
   sku_tier            = "Free"
   sku_size            = "Free"
+
 }
+
+resource "azurerm_cosmosdb_account" "main" {
+  name                = "cosmos-${var.project_name}"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  offer_type          = "Standard"
+  kind                = "GlobalDocumentDB"
+
+  consistency_policy {
+    consistency_level = "Session"
+  }
+
+  geo_location {
+    location          = azurerm_resource_group.main.location
+    failover_priority = 0
+  }
+
+  capabilities {
+    name = "EnableServerless"
+  }
+}
+
+resource "azurerm_cosmosdb_sql_database" "main" {
+  name                = "quizdb"
+  resource_group_name = azurerm_resource_group.main.name
+  account_name        = azurerm_cosmosdb_account.main.name
+}
+
+resource "azurerm_cosmosdb_sql_container" "questions" {
+  name                = "questions"
+  resource_group_name = azurerm_resource_group.main.name
+  account_name        = azurerm_cosmosdb_account.main.name
+  database_name       = azurerm_cosmosdb_sql_database.main.name
+  partition_key_paths = ["/topic"]
+}
+
+resource "azurerm_cosmosdb_sql_container" "scores" {
+  name                = "scores"
+  resource_group_name = azurerm_resource_group.main.name
+  account_name        = azurerm_cosmosdb_account.main.name
+  database_name       = azurerm_cosmosdb_sql_database.main.name
+  partition_key_paths = ["/email"]
+}
+
