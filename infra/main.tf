@@ -20,21 +20,25 @@ provider "azurerm" {
 }
 
 resource "azurerm_resource_group" "main" {
-  name     = "rg-${var.project_name}"
+  name     = "rg-${var.project_name}-${terraform.workspace}"
   location = var.location
 }
 
 resource "azurerm_static_web_app" "main" {
-  name                = "swa-${var.project_name}"
+  name                = "swa-${var.project_name}-${terraform.workspace}"
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
   sku_tier            = "Free"
   sku_size            = "Free"
 
+  app_settings = {
+    COSMOS_ENDPOINT = azurerm_cosmosdb_account.main.endpoint
+    COSMOS_KEY      = azurerm_cosmosdb_account.main.primary_key
+  }
 }
 
 resource "azurerm_cosmosdb_account" "main" {
-  name                = "cosmos-${var.project_name}"
+  name                = "cosmos-${var.project_name}-${terraform.workspace}"
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   offer_type          = "Standard"
