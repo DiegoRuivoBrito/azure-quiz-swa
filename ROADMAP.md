@@ -230,27 +230,215 @@ Atualmente o `terraform.tfstate` vive só na sua máquina. Se você perder o arq
 
 ---
 
-## Fase 12 — Ambientes: dev e prod com Terraform Workspaces
+## Fase 12 — Ambientes: dev e prod com Terraform Workspaces ✅ Concluída
 
 **Conceito:**
 Hoje temos um único ambiente: tudo que vai para `main` vai direto para produção. Em projetos reais, você precisa de pelo menos dois ambientes — um para testar mudanças antes de expô-las aos usuários.
 
-Terraform Workspaces permitem usar o mesmo código de infra para criar recursos paralelos e independentes. Um `workspace` é como uma "cópia isolada" do estado — `terraform workspace select dev` mantém um `tfstate` separado do `terraform workspace select prod`.
+Terraform Workspaces permitem usar o mesmo código de infra para criar recursos paralelos e independentes. Um `workspace` é como uma "cópia isolada" do estado — `terraform workspace select dev` mantém um `tfstate` separado do `terraform workspace select prod`. No Azure Storage (backend remoto), os arquivos ficam separados:
+
+```
+blob container: tfstate
+├── env:/prod/quiz-swa.terraform.tfstate
+└── env:/dev/quiz-swa.terraform.tfstate
+```
 
 A arquitetura de ambientes:
 ```
-Branch: dev  → GitHub Actions → rg-quiz-swa-dev  → swa-quiz-swa-dev
-Branch: main → GitHub Actions → rg-quiz-swa-prod → swa-quiz-swa-prod
+Branch: dev  → GitHub Actions → rg-quiz-swa-dev  → swa-quiz-swa-dev  → cosmos-quiz-swa-dev
+Branch: main → GitHub Actions → rg-quiz-swa-prod → swa-quiz-swa-prod → cosmos-quiz-swa-prod
 ```
 
-Cada ambiente tem seu próprio Resource Group, SWA e Cosmos DB — completamente isolados. Uma mudança quebrada em `dev` nunca afeta `prod`.
+Cada ambiente tem seu próprio Resource Group, SWA e Cosmos DB — completamente isolados. `terraform destroy` no workspace `dev` não toca no tfstate do `prod`.
 
-**Hands-on:**
-- Parametrizar o `main.tf` para usar `${var.environment}` nos nomes dos recursos
-- Criar workspaces `dev` e `prod` com `terraform workspace new`
-- Atualizar o `deploy.yml` para detectar o branch e fazer deploy no ambiente correto
-- Criar um `terraform.tfvars` por ambiente (ou usar variáveis de CI)
+**Checkpoint respondido:** `terraform destroy` age sobre o tfstate do workspace ativo — cada workspace tem o seu próprio arquivo de estado separado no Storage Account. Destruir `dev` não afeta `prod`.
+
+**Plano de execução (hands-on):**
+
+| # | Onde | O que |
+|---|------|--------|
+| 1 | `infra/main.tf` | Adicionar `${terraform.workspace}` nos nomes dos 3 recursos + `app_settings` no SWA para injetar `COSMOS_ENDPOINT` e `COSMOS_KEY` automaticamente |
+| 2 | terminal (`infra/`) | `terraform destroy` no workspace `default` (infra atual sai do ar brevemente) |
+| 3 | terminal | `terraform workspace new prod` + `terraform apply` |
+| 4 | GitHub | Adicionar secret `AZURE_STATIC_WEB_APPS_API_TOKEN_PROD` com o token do SWA prod |
+| 5 | terminal | `terraform workspace new dev` + `terraform apply` |
+| 6 | GitHub | Adicionar secret `AZURE_STATIC_WEB_APPS_API_TOKEN_DEV` com o token do SWA dev |
+| 7 | `.github/workflows/deploy.yml` | Disparar em `main` e `dev`; usar token correto por branch via `$GITHUB_REF` |
+| 8 | Git | Criar branch `dev` e dar push |
+| 9 | `api/scripts/seed.js` | Re-popular Cosmos DB de prod (e opcionalmente dev) |
+
+**Mudanças no `main.tf` (resumo):**
+```hcl
+# Nomes dinâmicos por workspace
+resource "azurerm_resource_group" "main" {
+  name = "rg-${var.project_name}-${terraform.workspace}"
+}
+
+resource "azurerm_static_web_app" "main" {
+  name = "swa-${var.project_name}-${terraform.workspace}"
+  app_settings = {
+    COSMOS_ENDPOINT = azurerm_cosmosdb_account.main.endpoint
+    COSMOS_KEY      = azurerm_cosmosdb_account.main.primary_key
+  }
+}
+
+resource "azurerm_cosmosdb_account" "main" {
+  name = "cosmos-${var.project_name}-${terraform.workspace}"
+}
+```
+
+**Mudanças no `deploy.yml` (resumo):**
+```yaml
+on:
+  push:
+    branches: [main, dev]
+
+# Detectar ambiente pelo branch:
+# refs/heads/main → AZURE_STATIC_WEB_APPS_API_TOKEN_PROD
+# refs/heads/dev  → AZURE_STATIC_WEB_APPS_API_TOKEN_DEV
+```
+
+**O que foi feito:**
+- `main.tf` atualizado: nomes dos recursos usam `${terraform.workspace}` (Resource Group, SWA, Cosmos DB)
+- `app_settings` injetados automaticamente no SWA com `COSMOS_ENDPOINT` e `COSMOS_KEY` do Cosmos DB do mesmo workspace
+- Workspaces `prod` e `dev` criados; `terraform apply` executado nos dois
+- `deploy.yml` atualizado: dispara em `main` e `dev`, seleciona o token correto por branch via `$GITHUB_REF`
+- Secrets `AZURE_STATIC_WEB_APPS_API_TOKEN_PROD` e `AZURE_STATIC_WEB_APPS_API_TOKEN_DEV` configurados no GitHub
+- Branch `dev` criado no Git e pushed
 
 **Entregável:** Push no branch `dev` deploya no ambiente de desenvolvimento. Merge para `main` deploya em produção. Os dois coexistem sem interferência.
 
-**Checkpoint:** O que acontece com o Cosmos DB de `dev` se você rodar `terraform destroy` no workspace `dev`? O banco de `prod` é afetado?
+**Custo extra:** dois Cosmos DB serverless coexistindo — com o uso atual (quiz pessoal), o custo adicional é próximo de zero.
+
+---
+
+## Fase 13 — Backup do banco de produção
+
+**Conceito:**
+O `terraform destroy` nos mostrou na prática o risco de não ter backup: dados de scores perdidos para sempre. Em produção real, o banco de dados é o ativo mais crítico — código e infra se recriam em minutos com IaC, mas dados perdidos não voltam.
+
+O Cosmos DB oferece dois modos de backup:
+- **Periodic** (padrão): snapshots a cada 1–24h, retidos por 2–30 dias. Restore leva horas e é feito pelo suporte da Microsoft.
+- **Continuous** (o padrão corporativo): point-in-time restore para qualquer momento dos últimos 7 ou 30 dias. Você mesmo inicia o restore pelo Portal ou CLI sem abrir ticket.
+
+Além do backup nativo do Cosmos DB, existe uma estratégia complementar: **export periódico para Storage Account**. Um timer trigger (Azure Function agendada) exporta os dados como JSON para um blob — funciona como um backup "legível" que você pode inspecionar, migrar ou importar em qualquer banco.
+
+**Hands-on:**
+- Habilitar **Continuous backup** no `azurerm_cosmosdb_account` do workspace `prod` via Terraform (bloco `backup { type = "Continuous" }`)
+- Criar uma Azure Function com timer trigger que exporta o container `scores` para um blob no Storage Account a cada 24h
+- Documentar o processo de restore (como recuperar de um ponto no tempo)
+- Testar o restore em dev para validar que o processo funciona
+
+**Entregável:** Cosmos DB de prod com continuous backup ativo + export diário automatizado para Storage Account. Processo de restore documentado e testado.
+
+**Checkpoint:** Qual a diferença entre o backup contínuo do Cosmos DB e o export para Storage Account? Em que situação você usaria cada um?
+
+---
+
+## Fase 14 — Script de bootstrap: recriação do ambiente do zero
+
+**Conceito:**
+Em ambientes corporativos existe um conceito chamado **Day-0 script** ou **bootstrap script** — um script que recria tudo que é necessário para um desenvolvedor (ou um pipeline de CI) operar do zero em uma nova máquina. Ele captura o conhecimento implícito ("o que eu preciso fazer depois de um terraform destroy?") e torna o processo repetível e auditável.
+
+O que precisamos automatizar:
+1. Configurar identidade Git (`user.name`, `user.email`)
+2. Gerar chave SSH, registrá-la no GitHub e verificar a conexão
+3. `terraform init` no workspace correto
+4. Capturar os deployment tokens do Terraform output e atualizar os GitHub Secrets automaticamente (`gh secret set`)
+5. Rodar o seed do Cosmos DB nos ambientes necessários
+
+Sem esse script, cada vez que a infra é recriada (intencional ou acidental), há uma lista mental de passos que podem ser esquecidos — e um erro silencioso (app sem token atualizado, banco vazio) é difícil de diagnosticar.
+
+**Hands-on:**
+- Criar `scripts/bootstrap.ps1` (PowerShell para Windows) que executa os passos acima em ordem
+- Criar `scripts/update-swa-tokens.ps1` — script focado só em capturar os tokens do Terraform e atualizar os GitHub Secrets (útil após qualquer `terraform apply` que recriar o SWA)
+- Documentar no `README` quando e como usar cada script
+
+**Entregável:** Após um `terraform destroy` + `terraform apply`, rodar `bootstrap.ps1` reconfigura tudo — Git, secrets do GitHub, seed do banco — sem nenhum passo manual.
+
+**Checkpoint:** Por que atualizar o GitHub Secret do deployment token é necessário após recriar o SWA? O que acontece com o deploy se você esquecer?
+
+---
+
+## Fase 15 — Key Vault: gestão de secrets
+
+**Conceito:**
+Atualmente `COSMOS_KEY` é injetada direto no `app_settings` do SWA. Isso significa que a chave do banco fica visível no Portal do Azure, nos logs do Terraform e em qualquer lugar que liste as configurações do app. Em produção corporativa real, secrets nunca ficam em `app_settings` — eles ficam no **Azure Key Vault** e o app referencia o Key Vault, não o valor direto.
+
+O padrão é: Azure Key Vault armazena o secret → SWA/Function tem uma **Managed Identity** (identidade atribuída pelo Azure, sem senha) → o RBAC do Key Vault autoriza essa identidade a ler o secret → o app usa uma referência `@Microsoft.KeyVault(...)` em vez do valor real.
+
+Benefícios corporativos:
+- Rotação de chaves sem redeploy (você muda no Key Vault, o app pega automaticamente)
+- Auditoria de quem acessou qual secret e quando
+- Nenhum humano precisa ver a chave para o app funcionar
+- Secrets não aparecem em logs ou outputs do Terraform
+
+**Hands-on:**
+- Criar `azurerm_key_vault` e `azurerm_key_vault_secret` no `main.tf` (só para o workspace `prod`)
+- Habilitar Managed Identity no SWA (`identity { type = "SystemAssigned" }`)
+- Dar permissão de leitura no Key Vault para a identidade do SWA via RBAC
+- Substituir o valor direto de `COSMOS_KEY` no `app_settings` pela referência Key Vault
+
+**Entregável:** `COSMOS_KEY` armazenada no Key Vault de prod. O app funciona normalmente, mas a chave não aparece em nenhum lugar visível.
+
+**Checkpoint:** O que é uma Managed Identity e por que ela é preferível a um service principal com senha para autenticar o acesso ao Key Vault?
+
+---
+
+## Fase 16 — GitHub Environments: aprovação manual para prod
+
+**Conceito:**
+Em produção corporativa, ninguém faz deploy direto em prod sem revisão. O GitHub Environments resolve isso com **protection rules**: antes de um job de deploy em prod rodar, ele pausa e aguarda aprovação de um revisor designado. Isso cria um gate de segurança sem mudar nada no código.
+
+Complementar a isso: **branch protection rules** no branch `main` que exigem Pull Request antes de qualquer merge. Com isso, o fluxo completo fica:
+```
+dev branch → PR para main → reviewer aprova → merge → GitHub Actions pausa → aprovação manual → deploy em prod
+```
+
+Isso elimina deploys acidentais em prod e cria um histórico auditável de quem aprovou o quê e quando.
+
+**Hands-on:**
+- Criar GitHub Environments `production` e `development` no repositório
+- Configurar protection rule no environment `production` com você mesmo como required reviewer
+- Mover os secrets de token por environment (em vez de secrets de repositório)
+- Habilitar branch protection no `main`: require PR, require 1 approval, dismiss stale reviews
+- Atualizar `deploy.yml` para referenciar os environments
+
+**Entregável:** Merge para `main` dispara o workflow, que pausa antes do deploy e aguarda aprovação manual. Deploy em `dev` continua automático.
+
+---
+
+## Fase 17 — Observabilidade: Application Insights
+
+**Conceito:**
+Sem monitoramento, você só descobre que algo quebrou em prod quando um usuário reclama. **Application Insights** é o serviço de APM (Application Performance Monitoring) do Azure — ele coleta automaticamente métricas de disponibilidade, erros, latência e uso, e permite configurar alertas que te notificam antes que o problema afete usuários.
+
+Para Azure Functions especificamente, o Application Insights mostra: quantas invocações por função, taxa de erro, duração média, exceptions com stack trace completo — tudo sem adicionar código de logging manual.
+
+**Hands-on:**
+- Criar `azurerm_application_insights` no `main.tf` (workspace `prod`)
+- Conectar ao SWA via `app_settings` (`APPINSIGHTS_INSTRUMENTATIONKEY`)
+- Configurar um alerta de disponibilidade (availability test) que notifica por email se o app ficar fora do ar
+- Configurar um alerta de taxa de erro nas Functions (threshold: >5% de erros em 5 minutos)
+- Explorar o Live Metrics durante um uso real do quiz
+
+**Entregável:** Dashboard do Application Insights mostrando métricas reais de uso. Alerta de disponibilidade configurado e testado.
+
+**Checkpoint:** Qual a diferença entre um log e uma métrica? Por que o Application Insights mantém os dois?
+
+---
+
+## Fase 18 — Controle de custos: budget alerts
+
+**Conceito:**
+Contas de cloud podem surpreender. Um recurso esquecido ligado, um loop de código que chama a API em excesso, ou simplesmente crescimento de uso — tudo isso pode gerar cobranças inesperadas. Em ambientes corporativos, **budget alerts** são obrigatórios: eles definem um limite de gasto mensal e disparam notificações quando você se aproxima dele.
+
+O Azure Cost Management permite criar budgets por Resource Group, subscription ou tag. Para este projeto, faz sentido um budget por Resource Group de prod — se o custo do `rg-quiz-swa-prod` passar de um threshold definido (ex: $10/mês), você recebe um email antes de ser cobrado em excesso.
+
+**Hands-on:**
+- Explorar o Azure Cost Management no Portal para ver o gasto atual por serviço
+- Criar um `azurerm_consumption_budget_resource_group` no Terraform para o RG de prod
+- Configurar notificação em 80% e 100% do budget mensal definido
+- Criar uma tag `environment` nos recursos via Terraform para filtrar custos por ambiente no Cost Management
+
+**Entregável:** Budget alert ativo para prod. Tags `environment=prod` e `environment=dev` nos recursos, visíveis no relatório de custos do Azure.
