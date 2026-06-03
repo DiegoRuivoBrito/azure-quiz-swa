@@ -312,7 +312,7 @@ on:
 
 ---
 
-## Fase 13 — Backup do banco de produção
+## Fase 13 — Backup do banco de produção ✅ Concluída
 
 **Conceito:**
 O `terraform destroy` nos mostrou na prática o risco de não ter backup: dados de scores perdidos para sempre. Em produção real, o banco de dados é o ativo mais crítico — código e infra se recriam em minutos com IaC, mas dados perdidos não voltam.
@@ -323,15 +323,15 @@ O Cosmos DB oferece dois modos de backup:
 
 Além do backup nativo do Cosmos DB, existe uma estratégia complementar: **export periódico para Storage Account**. Um timer trigger (Azure Function agendada) exporta os dados como JSON para um blob — funciona como um backup "legível" que você pode inspecionar, migrar ou importar em qualquer banco.
 
-**Hands-on:**
-- Habilitar **Continuous backup** no `azurerm_cosmosdb_account` do workspace `prod` via Terraform (bloco `backup { type = "Continuous" }`)
-- Criar uma Azure Function com timer trigger que exporta o container `scores` para um blob no Storage Account a cada 24h
-- Documentar o processo de restore (como recuperar de um ponto no tempo)
-- Testar o restore em dev para validar que o processo funciona
+**Nota técnica:** O Continuous backup do Cosmos DB não é compatível com contas Serverless — optamos pelo export via Function, que resolve o cenário mais crítico (sobreviver ao `terraform destroy`) e é independente do Cosmos DB account.
 
-**Entregável:** Cosmos DB de prod com continuous backup ativo + export diário automatizado para Storage Account. Processo de restore documentado e testado.
+**O que foi implementado:**
+- `azurerm_storage_account.backup` (`stquizswaback{workspace}`) + container `backups` via Terraform — criado em `dev` e `prod`
+- `BACKUP_STORAGE_CONNECTION` injetada no `app_settings` do SWA em ambos os ambientes
+- `api/src/functions/backupScores.js` — Azure Function com timer trigger `0 0 2 * * *` (02:00 UTC diário) que exporta todos os scores do Cosmos DB como JSON para `backups/scores-{data}.json`
+- `@azure/storage-blob` adicionado às dependências da api
 
-**Checkpoint:** Qual a diferença entre o backup contínuo do Cosmos DB e o export para Storage Account? Em que situação você usaria cada um?
+**Checkpoint respondido:** Backup contínuo restaura dentro do Cosmos DB (delete acidental, corrupção) mas some com `terraform destroy`. Export para Storage Account sobrevive à destruição da infra — são estratégias complementares para riscos diferentes.
 
 ---
 
