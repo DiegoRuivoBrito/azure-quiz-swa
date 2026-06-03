@@ -33,10 +33,79 @@ const TOPICS = {
   },
 };
 
-function Home({ onSelect, onViewHistory }) {
+function LoginForm({ onLogin, onSkip }) {
+  const [form, setForm] = useState({ name: '', email: '' });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (form.name.trim() && form.email.trim()) {
+      onLogin(form.name.trim(), form.email.trim());
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="login-form">
+      <input
+        className="text-input"
+        placeholder="Seu nome"
+        value={form.name}
+        autoFocus
+        onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+      />
+      <input
+        className="text-input"
+        type="email"
+        placeholder="Seu email"
+        value={form.email}
+        onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+      />
+      <div className="login-actions">
+        <button
+          className="submit-button"
+          type="submit"
+          disabled={!form.name.trim() || !form.email.trim()}
+        >
+          Entrar
+        </button>
+        {onSkip && (
+          <button type="button" className="ghost-button" onClick={onSkip}>
+            Continuar sem entrar
+          </button>
+        )}
+      </div>
+    </form>
+  );
+}
+
+function Home({ onSelect, onViewHistory, user, onLogin, onLogout }) {
+  const [showLogin, setShowLogin] = useState(false);
+
+  const handleLogin = (name, email) => {
+    onLogin(name, email);
+    setShowLogin(false);
+  };
+
   return (
     <div className="app-shell">
       <header className="hero">
+        <div className="user-bar">
+          {user ? (
+            <>
+              <span className="user-greeting">
+                Olá, <strong>{user.name}</strong>
+              </span>
+              <button className="ghost-button ghost-button--small" onClick={onLogout}>
+                Sair
+              </button>
+            </>
+          ) : showLogin ? (
+            <LoginForm onLogin={handleLogin} onSkip={() => setShowLogin(false)} />
+          ) : (
+            <button className="ghost-button" onClick={() => setShowLogin(true)}>
+              Entrar para salvar seus resultados
+            </button>
+          )}
+        </div>
         <p className="eyebrow">Quiz</p>
         <h1>Escolha um tema</h1>
         <p className="subtitle">
@@ -57,13 +126,15 @@ function Home({ onSelect, onViewHistory }) {
         ))}
       </div>
       <div className="history-link">
-        <button className="ghost-button" onClick={onViewHistory}>Ver meu histórico →</button>
+        <button className="ghost-button" onClick={onViewHistory}>
+          Ver meu histórico →
+        </button>
       </div>
     </div>
   );
 }
 
-function Quiz({ topicKey, onBack, onViewHistory }) {
+function Quiz({ topicKey, onBack, onViewHistory, user }) {
   const topic = TOPICS[topicKey];
   const [selectedOptions, setSelectedOptions] = useState(Array(5).fill(null));
   const [submitted, setSubmitted] = useState(false);
@@ -74,6 +145,7 @@ function Quiz({ topicKey, onBack, onViewHistory }) {
   const [saveForm, setSaveForm] = useState({ name: '', email: '' });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [savedEmail, setSavedEmail] = useState('');
 
   useEffect(() => {
     fetch(`/api/questions?topic=${topicKey}`)
@@ -101,26 +173,19 @@ function Quiz({ topicKey, onBack, onViewHistory }) {
     });
   };
 
-  const handleSubmit = () => {
-    const finalScore = selectedQuestions.reduce((acc, question, index) => {
-      return acc + (selectedOptions[index] === question.correct ? 1 : 0);
-    }, 0);
-    setScore(finalScore);
-    setSubmitted(true);
-  };
-
-  const handleSave = async () => {
+  const saveScore = async (name, email, finalScore) => {
     setSaving(true);
+    setSavedEmail(email);
     try {
       await fetch('/api/scores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: saveForm.name.trim(),
-          email: saveForm.email.trim(),
+          name,
+          email,
           topic: topicKey,
           topicLabel: topic.label,
-          score,
+          score: finalScore,
           totalQuestions: selectedQuestions.length,
         }),
       });
@@ -131,6 +196,19 @@ function Quiz({ topicKey, onBack, onViewHistory }) {
       setSaving(false);
     }
   };
+
+  const handleSubmit = () => {
+    const finalScore = selectedQuestions.reduce((acc, question, index) => {
+      return acc + (selectedOptions[index] === question.correct ? 1 : 0);
+    }, 0);
+    setScore(finalScore);
+    setSubmitted(true);
+    if (user) {
+      saveScore(user.name, user.email, finalScore);
+    }
+  };
+
+  const handleManualSave = () => saveScore(saveForm.name.trim(), saveForm.email.trim(), score);
 
   if (loading) {
     return (
@@ -213,7 +291,20 @@ function Quiz({ topicKey, onBack, onViewHistory }) {
 
           {submitted && (
             <div className="save-section">
-              {!saved ? (
+              {user ? (
+                <div className="saved-confirm">
+                  {saving ? (
+                    <span className="saving-msg">Salvando resultado...</span>
+                  ) : (
+                    <>
+                      <span>✓ Resultado salvo automaticamente</span>
+                      <button className="ghost-button" onClick={() => onViewHistory(user.email)}>
+                        Ver meu histórico →
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : !saved ? (
                 <>
                   <p className="save-label">Salvar resultado?</p>
                   <div className="save-fields">
@@ -232,7 +323,7 @@ function Quiz({ topicKey, onBack, onViewHistory }) {
                     />
                     <button
                       className="submit-button"
-                      onClick={handleSave}
+                      onClick={handleManualSave}
                       disabled={saving || !saveForm.name.trim() || !saveForm.email.trim()}
                     >
                       {saving ? 'Salvando...' : 'Salvar'}
@@ -242,7 +333,7 @@ function Quiz({ topicKey, onBack, onViewHistory }) {
               ) : (
                 <div className="saved-confirm">
                   <span>✓ Resultado salvo!</span>
-                  <button className="ghost-button" onClick={() => onViewHistory(saveForm.email)}>
+                  <button className="ghost-button" onClick={() => onViewHistory(savedEmail)}>
                     Ver meu histórico →
                   </button>
                 </div>
@@ -404,6 +495,10 @@ export default function App() {
   const [topic, setTopic] = useState(null);
   const [quizKey, setQuizKey] = useState(0);
   const [historyEmail, setHistoryEmail] = useState('');
+  const [user, setUser] = useState(null);
+
+  const handleLogin = (name, email) => setUser({ name, email });
+  const handleLogout = () => setUser(null);
 
   const handleSelectTopic = (t) => {
     setTopic(t);
@@ -412,7 +507,7 @@ export default function App() {
   };
 
   const handleViewHistory = (email = '') => {
-    setHistoryEmail(email);
+    setHistoryEmail(email || user?.email || '');
     setView('history');
   };
 
@@ -423,6 +518,7 @@ export default function App() {
         topicKey={topic}
         onBack={() => setView('home')}
         onViewHistory={handleViewHistory}
+        user={user}
       />
     );
   }
@@ -431,5 +527,13 @@ export default function App() {
     return <History onBack={() => setView('home')} initialEmail={historyEmail} />;
   }
 
-  return <Home onSelect={handleSelectTopic} onViewHistory={() => handleViewHistory()} />;
+  return (
+    <Home
+      onSelect={handleSelectTopic}
+      onViewHistory={() => handleViewHistory()}
+      user={user}
+      onLogin={handleLogin}
+      onLogout={handleLogout}
+    />
+  );
 }

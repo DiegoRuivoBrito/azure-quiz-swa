@@ -241,6 +241,49 @@ input {
   text-align: center;
 }
 
+.user-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  min-height: 44px;
+}
+
+.user-greeting {
+  color: #c3d0ff;
+  font-size: 0.9rem;
+}
+
+.ghost-button--small {
+  padding: 8px 14px;
+  font-size: 0.82rem;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.login-actions .submit-button {
+  padding: 12px 22px;
+}
+
+.saving-msg {
+  color: #8caeff;
+  font-size: 0.9rem;
+}
+
 .text-input {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.12);
