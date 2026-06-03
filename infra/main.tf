@@ -32,8 +32,9 @@ resource "azurerm_static_web_app" "main" {
   sku_size            = "Free"
 
   app_settings = {
-    COSMOS_ENDPOINT = azurerm_cosmosdb_account.main.endpoint
-    COSMOS_KEY      = azurerm_cosmosdb_account.main.primary_key
+    COSMOS_ENDPOINT           = azurerm_cosmosdb_account.main.endpoint
+    COSMOS_KEY                = azurerm_cosmosdb_account.main.primary_key
+    BACKUP_STORAGE_CONNECTION = azurerm_storage_account.backup.primary_connection_string
   }
 }
 
@@ -70,6 +71,20 @@ resource "azurerm_cosmosdb_sql_container" "questions" {
   account_name        = azurerm_cosmosdb_account.main.name
   database_name       = azurerm_cosmosdb_sql_database.main.name
   partition_key_paths = ["/topic"]
+}
+
+resource "azurerm_storage_account" "backup" {
+  name                     = "stquizswaback${terraform.workspace}"
+  resource_group_name      = azurerm_resource_group.main.name
+  location                 = azurerm_resource_group.main.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
+resource "azurerm_storage_container" "backup" {
+  name                  = "backups"
+  storage_account_id    = azurerm_storage_account.backup.id
+  container_access_type = "private"
 }
 
 resource "azurerm_cosmosdb_sql_container" "scores" {
