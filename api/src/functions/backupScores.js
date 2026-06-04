@@ -3,7 +3,7 @@ const { BlobServiceClient } = require('@azure/storage-blob');
 const { scoresContainer } = require('../lib/cosmos');
 
 app.timer('backupScores', {
-  schedule: '0 0 2 * * *', // todo dia às 02:00 UTC
+  schedule: '0 * * * * *', // TESTE: todo minuto — reverter para '0 0 2 * * *'
   handler: async (_timer, context) => {
     const { resources: scores } = await scoresContainer.items.readAll().fetchAll();
 
