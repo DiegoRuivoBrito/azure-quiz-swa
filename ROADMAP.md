@@ -321,17 +321,15 @@ O Cosmos DB oferece dois modos de backup:
 - **Periodic** (padrão): snapshots a cada 1–24h, retidos por 2–30 dias. Restore leva horas e é feito pelo suporte da Microsoft.
 - **Continuous** (o padrão corporativo): point-in-time restore para qualquer momento dos últimos 7 ou 30 dias. Você mesmo inicia o restore pelo Portal ou CLI sem abrir ticket.
 
-Além do backup nativo do Cosmos DB, existe uma estratégia complementar: **export periódico para Storage Account**. Um timer trigger (Azure Function agendada) exporta os dados como JSON para um blob — funciona como um backup "legível" que você pode inspecionar, migrar ou importar em qualquer banco.
+Além do backup nativo do Cosmos DB, existe uma estratégia complementar: **export periódico para Storage Account**. Um timer trigger (Azure Function agendada) exporta os dados como JSON para um blob.
 
-**Hands-on:**
-- Habilitar **Continuous backup** no `azurerm_cosmosdb_account` do workspace `prod` via Terraform (bloco `backup { type = "Continuous" }`)
-- Criar uma Azure Function com timer trigger que exporta o container `scores` para um blob no Storage Account a cada 24h
-- Documentar o processo de restore (como recuperar de um ponto no tempo)
-- Testar o restore em dev para validar que o processo funciona
+**Restrições identificadas:**
+- Continuous backup é incompatível com contas Serverless
+- Timer triggers não funcionam em SWA managed functions (Free tier) — o host não fica sempre ativo
 
-**Entregável:** Cosmos DB de prod com continuous backup ativo + export diário automatizado para Storage Account. Processo de restore documentado e testado.
+**Pendente:** Definir a abordagem correta antes de implementar (ver skill `arquiteto`).
 
-**Checkpoint:** Qual a diferença entre o backup contínuo do Cosmos DB e o export para Storage Account? Em que situação você usaria cada um?
+**Checkpoint:** Backup contínuo restaura dentro do Cosmos DB (delete acidental, corrupção) mas some com `terraform destroy`. Export para Storage Account sobrevive à destruição da infra — são estratégias complementares para riscos diferentes.
 
 ---
 
