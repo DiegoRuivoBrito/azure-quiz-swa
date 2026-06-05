@@ -321,15 +321,47 @@ O Cosmos DB oferece dois modos de backup:
 - **Periodic** (padrão): snapshots a cada 1–24h, retidos por 2–30 dias. Restore leva horas e é feito pelo suporte da Microsoft.
 - **Continuous** (o padrão corporativo): point-in-time restore para qualquer momento dos últimos 7 ou 30 dias. Você mesmo inicia o restore pelo Portal ou CLI sem abrir ticket.
 
-Além do backup nativo do Cosmos DB, existe uma estratégia complementar: **export periódico para Storage Account**. Um timer trigger (Azure Function agendada) exporta os dados como JSON para um blob.
-
-**Restrições identificadas:**
+**Restrições identificadas e validadas pelo arquiteto:**
 - Continuous backup é incompatível com contas Serverless
 - Timer triggers não funcionam em SWA managed functions (Free tier) — o host não fica sempre ativo
+- Storage Account no mesmo RG do workspace é destruído com ele — não é backup real
 
-**Pendente:** Definir a abordagem correta antes de implementar (ver skill `arquiteto`).
+**Abordagem aprovada: GitHub Actions scheduled workflow + RG de dados permanente**
 
-**Checkpoint:** Backup contínuo restaura dentro do Cosmos DB (delete acidental, corrupção) mas some com `terraform destroy`. Export para Storage Account sobrevive à destruição da infra — são estratégias complementares para riscos diferentes.
+```
+[GitHub Actions: on schedule diário]
+        ↓ az cosmosdb sql container query (via COSMOS_KEY como GitHub Secret)
+Cosmos DB → todos os scores como JSON
+        ↓ az storage blob upload (via BACKUP_STORAGE_CONNECTION como GitHub Secret)
+Storage Account stquizswabackup → container backups-prod/backups-dev
+        (em rg-quiz-swa-data — RG permanente, fora dos workspaces Terraform)
+```
+
+**Por que essa arquitetura:**
+- GitHub Actions é o scheduler — não depende do host do SWA estar ativo
+- Nenhum endpoint HTTP novo — acesso direto ao Cosmos DB via az CLI elimina superfície de ataque
+- `rg-quiz-swa-data` é criado via az CLI uma única vez, **não gerenciado por nenhum workspace Terraform** — sobrevive a qualquer `terraform destroy`
+- Connection strings ficam como GitHub Secrets, nunca em `app_settings` (sem risco de cascade destroy)
+
+**Separação de responsabilidades dos Resource Groups:**
+
+| RG | Ciclo de vida | Conteúdo |
+|---|---|---|
+| `rg-terraform-state` | Permanente | tfstate, controle de infra |
+| `rg-quiz-swa-data` | Permanente | backups de dados da aplicação |
+| `rg-quiz-swa-dev` | Destruível | SWA dev, Cosmos DB dev |
+| `rg-quiz-swa-prod` | Destruível | SWA prod, Cosmos DB prod |
+
+**Hands-on:**
+1. Criar `rg-quiz-swa-data` via `az group create` (operação única, fora do Terraform)
+2. Criar Storage Account `stquizswabackup` e containers `backups-prod` e `backups-dev` via az CLI
+3. Adicionar `BACKUP_STORAGE_CONNECTION` e `COSMOS_KEY_PROD` como GitHub Secrets
+4. Adicionar job `backup` ao `deploy.yml` com `on: schedule: - cron: '0 2 * * *'`
+5. Documentar processo de restore (como importar o JSON de volta ao Cosmos DB)
+
+**Entregável:** Scores de prod exportados diariamente como JSON para `rg-quiz-swa-data`, sobrevivendo a qualquer operação Terraform nos workspaces.
+
+**Checkpoint:** Por que o Storage Account de backup não deve ser gerenciado pelo mesmo workspace Terraform que gerencia o Cosmos DB?
 
 ---
 
