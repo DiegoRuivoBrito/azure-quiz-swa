@@ -8,8 +8,7 @@
   },
   "dependencies": {
     "@azure/cosmos": "^4.2.0",
-    "@azure/functions": "^4.6.0",
-    "@azure/storage-blob": "^12.26.0"
+    "@azure/functions": "^4.6.0"
   },
   "engines": {
     "node": ">=18.0.0"

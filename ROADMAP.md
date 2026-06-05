@@ -312,7 +312,7 @@ on:
 
 ---
 
-## Fase 13 — Backup do banco de produção ✅ Concluída
+## Fase 13 — Backup do banco de produção
 
 **Conceito:**
 O `terraform destroy` nos mostrou na prática o risco de não ter backup: dados de scores perdidos para sempre. Em produção real, o banco de dados é o ativo mais crítico — código e infra se recriam em minutos com IaC, mas dados perdidos não voltam.
@@ -321,17 +321,15 @@ O Cosmos DB oferece dois modos de backup:
 - **Periodic** (padrão): snapshots a cada 1–24h, retidos por 2–30 dias. Restore leva horas e é feito pelo suporte da Microsoft.
 - **Continuous** (o padrão corporativo): point-in-time restore para qualquer momento dos últimos 7 ou 30 dias. Você mesmo inicia o restore pelo Portal ou CLI sem abrir ticket.
 
-Além do backup nativo do Cosmos DB, existe uma estratégia complementar: **export periódico para Storage Account**. Um timer trigger (Azure Function agendada) exporta os dados como JSON para um blob — funciona como um backup "legível" que você pode inspecionar, migrar ou importar em qualquer banco.
+Além do backup nativo do Cosmos DB, existe uma estratégia complementar: **export periódico para Storage Account**. Um timer trigger (Azure Function agendada) exporta os dados como JSON para um blob.
 
-**Nota técnica:** O Continuous backup do Cosmos DB não é compatível com contas Serverless — optamos pelo export via Function, que resolve o cenário mais crítico (sobreviver ao `terraform destroy`) e é independente do Cosmos DB account.
+**Restrições identificadas:**
+- Continuous backup é incompatível com contas Serverless
+- Timer triggers não funcionam em SWA managed functions (Free tier) — o host não fica sempre ativo
 
-**O que foi implementado:**
-- `azurerm_storage_account.backup` (`stquizswaback{workspace}`) + container `backups` via Terraform — criado em `dev` e `prod`
-- `BACKUP_STORAGE_CONNECTION` injetada no `app_settings` do SWA em ambos os ambientes
-- `api/src/functions/backupScores.js` — Azure Function com timer trigger `0 0 2 * * *` (02:00 UTC diário) que exporta todos os scores do Cosmos DB como JSON para `backups/scores-{data}.json`
-- `@azure/storage-blob` adicionado às dependências da api
+**Pendente:** Definir a abordagem correta antes de implementar (ver skill `arquiteto`).
 
-**Checkpoint respondido:** Backup contínuo restaura dentro do Cosmos DB (delete acidental, corrupção) mas some com `terraform destroy`. Export para Storage Account sobrevive à destruição da infra — são estratégias complementares para riscos diferentes.
+**Checkpoint:** Backup contínuo restaura dentro do Cosmos DB (delete acidental, corrupção) mas some com `terraform destroy`. Export para Storage Account sobrevive à destruição da infra — são estratégias complementares para riscos diferentes.
 
 ---
 

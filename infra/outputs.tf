@@ -19,8 +19,3 @@ output "cosmosdb_primary_key" {
   value       = azurerm_cosmosdb_account.main.primary_key
   sensitive   = true
 }
-
-output "backup_storage_account_name" {
-  description = "Nome do Storage Account de backup — use para inspecionar os blobs no Portal"
-  value       = azurerm_storage_account.backup.name
-}
